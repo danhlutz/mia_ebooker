@@ -1,6 +1,34 @@
+from time import sleep
+import string
+
+from bs4 import BeautifulSoup
+import requests
 
 
+class Crawler():
+    # crawls a Marixst Internet Archive index page to build up
+    # a list of content pages
 
+    def __init__(self, target=None):
+        # store links to items in an orderedDict
+        self.chapters = []
+        if target == None:
+            self.target = raw_input('What page do you want to ebook?')
+        else:
+            self.target = target
+
+
+    def scrape_index(self, verbose=False):
+        # scrapes an index pages and adds to both the index and content objects
+        html = requests.get(self.target).text
+        soup = BeautifulSoup(html, 'html5lib')
+        for link in soup.find_all('a'):
+            daughter_url = link.get('href')
+            if verbose: print link.get_text()
+            if daughter_url == None: continue
+            if classify_link(daughter_url) == 'content':
+                full_link = combine_links(self.target, daughter_url)
+                self.chapters.append(full_link)
 
 
 
@@ -121,8 +149,11 @@ def test_combine():
                          'http://example.com/mystuff/friendex.htm'
 
 
-
-
+def test_scrape_index():
+    x = Crawler('https://www.marxists.org/archive/trotsky/1920/terrcomm/index.htm')
+    x.scrape_index()
+    return x.chapters[4] == \
+        u'https://www.marxists.org/archive/trotsky/1920/terrcomm/ch02.htm'
 
 # testing harness
 def test_func(func):
@@ -132,7 +163,6 @@ def test_func(func):
         return 1
     else:
         return 0
-
 
 
 def test():
@@ -146,6 +176,7 @@ def test():
         test_classify,
         test_find_last_slash,
         test_combine,
+        test_scrape_index,
         ]
     # will print individual test results before summing results
     passed = sum([test_func(function) for function in func_list])
