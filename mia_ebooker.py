@@ -1,6 +1,6 @@
 from time import sleep
 import string
-from collections import orderedDict
+from collections import OrderedDict
 
 from bs4 import BeautifulSoup
 import requests
@@ -35,6 +35,10 @@ class Crawler():
 
     def get_content_page(self, target_url):
         html = requests.get(target_url).text
+        # use helper functions to find the starting and ending indexes
+        # of the html, then save just that section of the html in an orderedDict
+        self.content[target_url] = \
+            html[find_section_start(html):find_section_end(html)]
 
 
 
@@ -214,6 +218,17 @@ def test_find_section_end():
     return html[find_section_end(html):] == '</head>'
 
 
+def test_get_sections_only():
+    url = 'https://www.marxists.org/archive/trotsky/1907/1905/ch07.htm'
+    x = Crawler(target=url)
+    x.get_content_page(url)
+    html_start = x.content[url][:15]
+    html_end = x.content[url][-4:]
+    print html_start
+    print html_end
+    return html_start == '<hr class="sect' and \
+        html_end == 'r />'
+
 # testing harness
 def test_func(func):
     result = func()
@@ -238,7 +253,8 @@ def test():
         test_scrape_index,
         test_find_section_start,
         test_find_section_end,
-        test_find_next_bracket
+        test_find_next_bracket,
+        test_get_sections_only
         ]
     # will print individual test results before summing results
     passed = sum([test_func(function) for function in func_list])
