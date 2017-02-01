@@ -1,5 +1,6 @@
 from time import sleep
 import string
+from collections import orderedDict
 
 from bs4 import BeautifulSoup
 import requests
@@ -16,6 +17,7 @@ class Crawler():
             self.target = raw_input('What page do you want to ebook?')
         else:
             self.target = target
+        self.content = OrderedDict()
 
 
     def scrape_index(self, verbose=False):
@@ -29,6 +31,12 @@ class Crawler():
             if classify_link(daughter_url) == 'content':
                 full_link = combine_links(self.target, daughter_url)
                 self.chapters.append(full_link)
+
+
+    def get_content_page(self, target_url):
+        html = requests.get(target_url).text
+
+
 
 
 
@@ -84,6 +92,28 @@ def combine_links(mother, daughter):
     if daughter[:2] == '..':
         return mother[:find_next_to_last_slash(mother)] + daughter[2:]
     return mother[:find_last_slash(mother) + 1] + daughter
+
+
+def find_section_start(html):
+    for i, character in enumerate(html):
+        if html[i:i+3] == '<hr':
+            return i
+
+
+def find_section_end(html):
+    last_one = 0
+
+    for i, character in enumerate(html):
+        if html[i:i+3] == '<hr':
+            last_one = i
+    return last_one + find_next_bracket(html[last_one:]) + 1
+
+
+def find_next_bracket(html):
+    for i, character in enumerate(html):
+        if character == '>':
+            return i
+
 
 
 # TESTS
@@ -155,6 +185,35 @@ def test_scrape_index():
     return x.chapters[4] == \
         u'https://www.marxists.org/archive/trotsky/1920/terrcomm/ch02.htm'
 
+
+def test_find_section_start():
+    html = '''<head><body><class><hr class='class' />
+    <p>stuff</p>
+    </body>
+    <hr >
+    </head>
+    '''
+    print find_section_start(html)
+    return find_section_start(html) == 19
+
+
+def test_find_next_bracket():
+    html = '''<head><body><class><hr class='class' />
+    <p>stuff</p>
+    </body>
+    <hr /></head>'''
+    return find_next_bracket(html) == 5 and \
+        find_next_bracket(html[19:]) == 19
+
+def test_find_section_end():
+    html = '''<head><body><class><hr class='class' />
+    <p>stuff</p>
+    </body>
+    <hr /></head>'''
+    print html[find_section_end(html):]
+    return html[find_section_end(html):] == '</head>'
+
+
 # testing harness
 def test_func(func):
     result = func()
@@ -177,6 +236,9 @@ def test():
         test_find_last_slash,
         test_combine,
         test_scrape_index,
+        test_find_section_start,
+        test_find_section_end,
+        test_find_next_bracket
         ]
     # will print individual test results before summing results
     passed = sum([test_func(function) for function in func_list])
