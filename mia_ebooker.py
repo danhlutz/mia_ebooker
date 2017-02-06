@@ -122,6 +122,29 @@ def split_add(full_text, mini_text, position):
            position + len(mini_text))
 
 
+def go_to_end_and_replace(text, replacement, position):
+    while text[position] != '"':
+        position += 1
+    return split_add(text, replacement, position)
+
+
+def fix_links(text, replacement, verbose=False):
+    position = 0
+    while position < len(text):
+        if text[position:position + 4] == 'id="':
+            if verbose: print 'got an id!'
+            text, position = go_to_end_and_replace(text, replacement, position + 4)
+        elif text[position:position + 6] == 'name="':
+            if verbose: print 'got a name!'
+            text, position = go_to_end_and_replace(text, replacement, position + 6)
+        elif text[position:position + 6] == 'href="':
+            if verbose: print 'got an href!'
+            text, position = go_to_end_and_replace(text, replacement, position + 6)
+        else:
+            position += 1
+    return text
+
+
 # TESTS
 
 def test_fix_unicode():
@@ -231,11 +254,28 @@ def test_get_sections_only():
     return html_start == '<hr class="sect' and \
         html_end == 'r />'
 
+
 def test_split_add():
     text = '<a id="n1" name="n1" href="#f1"><strong>1.</strong></a>'
     text, position = split_add(text, 'abc', 9)
     text, position = split_add(text, 'ABC', position)
     return text == '<a id="n1abcABC" name="n1" href="#f1"><strong>1.</strong></a>'
+
+
+def test_go_to_end_and_replace():
+    text = '<a id="f2" name="f2" href="#n2">[2]</a>'
+    text, position = go_to_end_and_replace(text, 'AB', 17)
+    print text, position
+    return position == 21 and \
+        text == '<a id="f2" name="f2AB" href="#n2">[2]</a>'
+
+
+def test_fix_links():
+    text = '<a id="f2" name="f2" href="#n2">[2]</a>'
+    new_text = fix_links(text, 'ABC')
+    return len(text) + 9 == len(new_text) and \
+        new_text == '<a id="f2ABC" name="f2ABC" href="#n2ABC">[2]</a>'
+
 
 # testing harness
 def test_func(func):
@@ -263,8 +303,11 @@ def test():
         test_find_section_end,
         test_find_next_bracket,
         test_get_sections_only,
-        test_split_add
+        test_split_add,
+        test_go_to_end_and_replace,
+        test_fix_links,
         ]
+
     # will print individual test results before summing results
     passed = sum([test_func(function) for function in func_list])
     total = len(func_list)
