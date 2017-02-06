@@ -41,10 +41,6 @@ class Crawler():
             html[find_section_start(html):find_section_end(html)]
 
 
-
-
-
-
 # HELPER FUNCTIONS
 
 # HELPER FUNCTIONS
@@ -118,6 +114,12 @@ def find_next_bracket(html):
         if character == '>':
             return i
 
+
+def split_add(full_text, mini_text, position):
+    """add mini_text at full_text[position],
+    then returns the new full_text and new position"""
+    return (full_text[:position] + mini_text + full_text[position:],
+           position + len(mini_text))
 
 
 # TESTS
@@ -229,6 +231,12 @@ def test_get_sections_only():
     return html_start == '<hr class="sect' and \
         html_end == 'r />'
 
+def test_split_add():
+    text = '<a id="n1" name="n1" href="#f1"><strong>1.</strong></a>'
+    text, position = split_add(text, 'abc', 9)
+    text, position = split_add(text, 'ABC', position)
+    return text == '<a id="n1abcABC" name="n1" href="#f1"><strong>1.</strong></a>'
+
 # testing harness
 def test_func(func):
     result = func()
@@ -254,7 +262,8 @@ def test():
         test_find_section_start,
         test_find_section_end,
         test_find_next_bracket,
-        test_get_sections_only
+        test_get_sections_only,
+        test_split_add
         ]
     # will print individual test results before summing results
     passed = sum([test_func(function) for function in func_list])
