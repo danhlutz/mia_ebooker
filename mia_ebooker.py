@@ -40,6 +40,13 @@ class Crawler():
                 self.author = content
             if name == 'description':
                 self.title = content
+        # add the book information
+        for tag in soup.find_all('p'):
+            #print tag.get('class')
+            if tag.get('class') == [u'information'] or \
+                tag.get('class') == ['information']:
+            #print 'got one!'
+                self.information = str(tag)
 
 
     def get_content_page(self, target_url):
@@ -237,7 +244,7 @@ def test_find_section_start():
     <hr >
     </head>
     '''
-    print find_section_start(html)
+    #print find_section_start(html)
     return find_section_start(html) == 19
 
 
@@ -254,7 +261,7 @@ def test_find_section_end():
     <p>stuff</p>
     </body>
     <hr /></head>'''
-    print html[find_section_end(html):]
+    #print html[find_section_end(html):]
     return html[find_section_end(html):] == '</head>'
 
 
@@ -264,8 +271,8 @@ def test_get_sections_only():
     x.get_content_page(url)
     html_start = x.content[url][:15]
     html_end = x.content[url][-4:]
-    print html_start
-    print html_end
+    #print html_start
+    #print html_end
     return html_start == '<hr class="sect' and \
         html_end == 'r />'
 
@@ -280,7 +287,7 @@ def test_split_add():
 def test_go_to_end_and_replace():
     text = '<a id="f2" name="f2" href="#n2">[2]</a>'
     text, position = go_to_end_and_replace(text, 'AB', 17)
-    print text, position
+    # print text, position
     return position == 21 and \
         text == '<a id="f2" name="f2AB" href="#n2">[2]</a>'
 
@@ -296,6 +303,11 @@ def test_find_author_title():
     x.scrape_index()
     return x.author == 'Leon Trotsky' and \
         x.title == 'Leon Trotsky: The Stalin School of Falsification (1937)'
+
+def test_get_book_info():
+    x = Crawler('https://www.marxists.org/archive/trotsky/1932/pcr/index.htm')
+    x.scrape_index()
+    return x.information != None
 
 
 # testing harness
@@ -327,7 +339,8 @@ def test():
         test_split_add,
         test_go_to_end_and_replace,
         test_fix_links,
-        test_find_author_title
+        test_find_author_title,
+        test_get_book_info
         ]
 
     # will print individual test results before summing results
