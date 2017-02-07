@@ -12,7 +12,7 @@ class Crawler():
 
     def __init__(self, target=None):
         # store links to items in an orderedDict
-        self.chapters = []
+        self.chapters = OrderedDict()
         if target == None:
             self.target = raw_input('What page do you want to ebook?')
         else:
@@ -30,15 +30,30 @@ class Crawler():
             if daughter_url == None: continue
             if classify_link(daughter_url) == 'content':
                 full_link = combine_links(self.target, daughter_url)
-                self.chapters.append(full_link)
+                title = link.get_text()
+                self.chapters[full_link] = title
+        # finds and adds the author and title to the book
+        for tag in soup.find_all('meta'):
+            name = tag.get('name')
+            content = tag.get('content')
+            if name == 'author':
+                self.author = content
+            if name == 'description':
+                self.title = content
 
 
     def get_content_page(self, target_url):
         html = requests.get(target_url).text
         # use helper functions to find the starting and ending indexes
-        # of the html, then save just that section of the html in an orderedDict
-        self.content[target_url] = \
-            html[find_section_start(html):find_section_end(html)]
+        # of the html, then
+        # get only the relevant part of the html
+        html = html[find_section_start(html):find_section_end(html)]
+        # make up a name for the section
+        section_name = 'section' + str(len(self.content.keys()) + 1)
+        # fix the links and save just that section of the html in an orderedDict
+        self.content[target_url] = fix_links(html, section_name)
+
+
 
 
 # HELPER FUNCTIONS
@@ -211,7 +226,7 @@ def test_combine():
 def test_scrape_index():
     x = Crawler('https://www.marxists.org/archive/trotsky/1920/terrcomm/index.htm')
     x.scrape_index()
-    return x.chapters[4] == \
+    return x.chapters.keys()[4] == \
         u'https://www.marxists.org/archive/trotsky/1920/terrcomm/ch02.htm'
 
 
@@ -276,6 +291,12 @@ def test_fix_links():
     return len(text) + 9 == len(new_text) and \
         new_text == '<a id="f2ABC" name="f2ABC" href="#n2ABC">[2]</a>'
 
+def test_find_author_title():
+    x = Crawler('https://www.marxists.org/archive/trotsky/1937/ssf/index.htm')
+    x.scrape_index()
+    return x.author == 'Leon Trotsky' and \
+        x.title == 'Leon Trotsky: The Stalin School of Falsification (1937)'
+
 
 # testing harness
 def test_func(func):
@@ -306,6 +327,7 @@ def test():
         test_split_add,
         test_go_to_end_and_replace,
         test_fix_links,
+        test_find_author_title
         ]
 
     # will print individual test results before summing results
