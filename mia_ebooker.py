@@ -61,6 +61,57 @@ class Crawler():
         self.content[target_url] = fix_links(html, section_name)
 
 
+    def read_the_classics(self, verbose=False, sleep_time=15):
+        i = 0
+        for key in self.chapters.keys():
+            if verbose: print 'sleeping, items left' + \
+                str(len(self.chapters.keys()) - i)
+            sleep(sleep_time)
+
+            self.get_content_page(key)
+            i += 1
+
+
+    def make_marxism(self):
+        # combines the elements to write the book
+        # write front matter
+        front = '<p><center>' + self.title + \
+            '</center></p><p><center>' + self.author + \
+            '</center></p><mbp:pagebreak />'
+
+        # write section to make front matter
+        # create TOC
+        toc = '<p>Contents</p>'
+        body = ''
+        chapter_counter = 0
+
+        for key, chapter in self.chapters.items():
+            chapter_counter += 1
+            toc += '<p><a id="toc' + str(chapter_counter) + '" ' + \
+                'href="#chapter' + str(chapter_counter) + \
+                '">' + chapter + '</ a></p>'
+            body += '<p><center><a id="chapter' + str(chapter_counter) + '" ' +\
+                'href="#toc' + str(chapter_counter) + \
+                '">***</ a></p>' + \
+                self.content[key] + \
+                '</center></p><mbp:pagebreak />'
+
+        toc += '<mbp:pagebreak />'
+
+        self.book = front + toc + body
+
+    def save_book(self):
+        f = open(strip_spaces(self.title) + '.html', 'wb')
+        f.write(self.book)
+        f.close()
+
+    def do_it_all(self):
+        self.scrape_index()
+        self.read_the_classics(sleep_time=3)
+        self.make_marxism()
+        self.save_book()
+
+
 
 
 # HELPER FUNCTIONS
@@ -165,6 +216,13 @@ def fix_links(text, replacement, verbose=False):
         else:
             position += 1
     return text
+
+def strip_spaces(text):
+    final = ''
+    for character in text:
+        if character != ' ':
+            final += character
+    return final
 
 
 # TESTS
@@ -310,6 +368,12 @@ def test_get_book_info():
     return x.information != None
 
 
+def test_read_the_classics():
+    x = Crawler('https://www.marxists.org/archive/trotsky/britain/wibg/index.htm')
+    x.scrape_index()
+    x.read_the_classics()
+    return len(x.content.values()) > 0
+
 # testing harness
 def test_func(func):
     result = func()
@@ -340,7 +404,8 @@ def test():
         test_go_to_end_and_replace,
         test_fix_links,
         test_find_author_title,
-        test_get_book_info
+        test_get_book_info,
+        test_read_the_classics
         ]
 
     # will print individual test results before summing results
