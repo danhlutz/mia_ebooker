@@ -1,6 +1,7 @@
 from time import sleep
 import string
 from collections import OrderedDict
+import codecs
 
 from bs4 import BeautifulSoup
 import requests
@@ -89,26 +90,31 @@ class Crawler():
             chapter_counter += 1
             toc += '<p><a id="toc' + str(chapter_counter) + '" ' + \
                 'href="#chapter' + str(chapter_counter) + \
-                '">' + chapter + '</ a></p>'
+                '">' + chapter + '</a></p>'
             body += '<p><center><a id="chapter' + str(chapter_counter) + '" ' +\
                 'href="#toc' + str(chapter_counter) + \
-                '">***</ a></p>' + \
+                '">***</a></center></p>' + \
                 self.content[key] + \
-                '</center></p><mbp:pagebreak />'
+                '<mbp:pagebreak />'
 
         toc += '<mbp:pagebreak />'
 
-        self.book = front + toc + body
+        self.book = unicode(front + toc + body)
 
     def save_book(self):
-        f = open(strip_spaces(self.title) + '.html', 'wb')
+        filename = strip_spaces(self.title) + '.html'
+        f = codecs.open(filename, encoding='utf-8', mode='w+')
         f.write(self.book)
         f.close()
 
     def do_it_all(self):
+        print 'scraping'
         self.scrape_index()
+        print 'reading'
         self.read_the_classics(sleep_time=3)
+        print 'making marxism'
         self.make_marxism()
+        print 'saving book'
         self.save_book()
 
 
